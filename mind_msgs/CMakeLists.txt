@@ -67,6 +67,7 @@ add_service_files(
   WriteData.srv
   RegisterData.srv
   GetDataList.srv
+  GoogleEntity.srv
 )
 
 ## Generate actions in the 'action' folder
