@@ -56,6 +56,7 @@ add_message_files(
   ReplyAnalyzed.msg
   EntitiesIndex.msg
   SetIdleMotion.msg
+  DBQuery.msg
 )
 
 ## Generate services in the 'srv' folder
