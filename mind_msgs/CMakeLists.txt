@@ -57,6 +57,7 @@ add_message_files(
   EntitiesIndex.msg
   SetIdleMotion.msg
   DBQuery.msg
+  LearningFigure.msg
 )
 
 ## Generate services in the 'srv' folder
