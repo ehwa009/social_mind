@@ -58,6 +58,7 @@ add_message_files(
   SetIdleMotion.msg
   DBQuery.msg
   LearningFigure.msg
+  ResponseProb.msg
 )
 
 ## Generate services in the 'srv' folder
