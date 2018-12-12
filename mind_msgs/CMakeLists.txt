@@ -56,8 +56,6 @@ add_message_files(
   ReplyAnalyzed.msg
   EntitiesIndex.msg
   SetIdleMotion.msg
-  DBQuery.msg
-  LearningFigure.msg
   ResponseProb.msg
 )
 
@@ -70,7 +68,7 @@ add_service_files(
   WriteData.srv
   RegisterData.srv
   GetDataList.srv
-  GoogleEntity.srv
+  DBQuery.srv
 )
 
 ## Generate actions in the 'action' folder
