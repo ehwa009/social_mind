@@ -23,7 +23,7 @@
 
     <!-- Motion Arbiter -->
     <!-- <node name="sentence_classifier" type="sentence_classifier.py" pkg="motion_arbiter" output="screen" unless="$(arg use_v1_arbiter)"/> -->
-    <node name="lstm_tag_generator" type="tag_generator.py" pkg="motion_arbiter" output="screen" unless="$(arg use_v1_arbiter)"/>
+    <node name="guesture_tag_generator" type="tag_generator.py" pkg="motion_arbiter" output="screen" unless="$(arg use_v1_arbiter)"/>
     
     <node name="motion_arbiter" type="motion_arbiter.py" pkg="motion_arbiter" output="screen" if="$(arg use_v1_arbiter)">
         <param name="visualization" value="$(arg show_generated_timeline)" />
