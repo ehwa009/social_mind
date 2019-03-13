@@ -45,7 +45,7 @@ class SentenceClassifier:
 
     def handle_domain_reply(self, msg):
         sents = self.sent_detector.tokenize(msg.reply.strip())
-
+        print(sents)
         msg = ReplyAnalyzed()
         msg.header.stamp = rospy.Time.now()
 

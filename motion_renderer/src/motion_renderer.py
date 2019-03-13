@@ -160,6 +160,7 @@ class MotionRenderer:
 
         # Sort by delay time
         scene_item_sorted_by_time = sorted(render_scene_time, key=render_scene_time.get)
+        print(scene_item_sorted_by_time)
         first_offset_time = render_scene[scene_item_sorted_by_time[0]]['offset']
         rospy.sleep(first_offset_time)
 

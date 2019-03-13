@@ -7,6 +7,7 @@ warnings.filterwarnings('ignore', category=RuntimeWarning)
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem.lancaster import LancasterStemmer
+from nltk import classify, pos_tag, word_tokenize
 
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
@@ -77,30 +78,32 @@ def create_model(vocab_size, max_length):
     model.add(Dense(11, activation = "softmax"))
     return model
 
-def predictions(text):
-    clean = re.sub(r'[^ a-z A-Z 0-9]', " ", text)
-    test_word = word_tokenize(clean)
-    test_word = [w.lower() for w in test_word]
-    test_ls = word_tokenizer.texts_to_sequences(test_word)
-    print(test_word)
-    #Check for unknown words
-    if [] in test_ls:
-        test_ls = list(filter(None, test_ls))
+# def predictions(text):
+#     clean = re.sub(r'[^ a-z A-Z 0-9]', " ", text)
+#     test_word = word_tokenize(clean)
+#     test_word = [w.lower() for w in test_word]
+#     test_ls = word_tokenizer.texts_to_sequences(test_word)
+#     print(test_word)
+#     #Check for unknown words
+#     if [] in test_ls:
+#         test_ls = list(filter(None, test_ls))
 
-    test_ls = np.array(test_ls).reshape(1, len(test_ls))
+#     test_ls = np.array(test_ls).reshape(1, len(test_ls))
 
-    x = padding_doc(test_ls, max_length)
-    print(x.shape)
+#     x = padding_doc(test_ls, max_length)
+#     print(x.shape)
 
-#     pred = model.predict_proba(x)
-    pred = model.predict_classes(x)
+# #     pred = model.predict_proba(x)
+#     pred = model.predict_classes(x)
 
 
-    return pred 
+    # return pred 
 
 class TagGenerator:
 
     def __init__(self):
+        self.sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+
         # predifined value for the model
         self.MAX_LENGTH = 25
         self.tag_list = ['multiple_choice', 'welcome', 'request', 'greeting', 'inform', 'confirm_answer', 'thanks', 'closing']
@@ -137,29 +140,57 @@ class TagGenerator:
         rospy.loginfo("\033[93m[%s]\033[0m initialized." % rospy.get_name())
 
     def handle_domain_reply(self, msg):
-        remain_tags = ''
-        clean = re.sub(r'[^ a-z A-Z 0-9]', " ", msg.reply)
-        test_word = word_tokenize(clean)
-
-        test_ls = self.word_tokenizer.texts_to_sequences(test_word)
-        if [] in test_ls:
-            test_ls = list(filter(None, test_ls))
-        test_ls = np.array(test_ls).reshape(1, len(test_ls))
-        x = padding_doc(test_ls, self.MAX_LENGTH)
-        
-        # predict label
-        pred = self.model.predict_classes(x)
-        pred_tag = str(self.tag_list[pred[0]])
-
-        entity = EntitiesIndex()
-
+        sents = self.sent_detector.tokenize(msg.reply.strip())
         # create ros topic message
         msg = ReplyAnalyzed()
         msg.header.stamp = rospy.Time.now()
-        # add contents to the message
-        msg.entities.append(entity)
-        msg.sents.append(remain_tags + ' ' + clean)
-        msg.act_type.append(pred_tag + '/%d'%len(clean))
+        
+        for sent in sents:
+            # sperate tags and text
+            sent_tags = re.findall('(%[^}]+%)', sent)
+            sent_text = re.sub('(%[^}]+%)', '', sent).strip()           
+
+            # if task manager select intent we use it, or we use classifier for select intent
+            result = ''
+            remain_tags = ''
+            if not any('sm=' in tag for tag in sent_tags):
+                remain_tags = ''
+
+                clean = re.sub(r'[^ a-z A-Z 0-9]', " ", sent_text)
+                test_word = word_tokenize(clean)
+
+                test_ls = self.word_tokenizer.texts_to_sequences(test_word)
+                if [] in test_ls:
+                    test_ls = list(filter(None, test_ls))
+                test_ls = np.array(test_ls).reshape(1, len(test_ls))
+                x = padding_doc(test_ls, self.MAX_LENGTH)
+                
+                # predict label
+                pred = self.model.predict_classes(x)
+                pred_tag = str(self.tag_list[pred[0]])
+            else:
+                tag_text = sent_tags[0].strip('{}').split('|')
+                matching = [s for s in tag_text if "sm=" in s]
+                if len(matching) > 1:
+                    rospy.logwarn('Only one sm tags allowed...')
+                result = matching[0].split('=')[1]
+                for s in tag_text:
+                    if not "sm=" in s:
+                        remain_tags += s + '|'
+                if remain_tags != '':
+                    remain_tags = '{' + remain_tags.rstrip('|') + '}'
+
+            entity = EntitiesIndex()
+            for i in pos_tag(word_tokenize(clean)):
+                if(i[1] in ['RB', 'PRP', 'NN', 'PRP$']):
+                    entity.entity.append(i[0])
+                    entity.entity_index.append(clean.index(i[0]))
+
+
+            # add contents to the message
+            msg.entities.append(entity)
+            msg.sents.append(remain_tags + ' ' + sent_text)
+            msg.act_type.append(pred_tag + '/%d'%len(clean))
 
         self.pub_reply_analyzed.publish(msg)
 
