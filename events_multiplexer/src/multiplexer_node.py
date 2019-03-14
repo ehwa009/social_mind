@@ -40,7 +40,7 @@ class MultiplexerNode:
             #     result = json.loads(result.data)
             #     self.recognized_words_queue.put(result['recognized_word'])
             parse_data = json.loads(msg.data)
-            self.recognized_words_queue.put(parse_data['recognized_word'])
+            self.recognized_words_queue.put(parse_data['recognized_word'] + "/" + str(parse_data['confidence']))
 
         self.events_queue.put(msg.event)
         self.data_queue.put(msg.data)
@@ -54,7 +54,13 @@ class MultiplexerNode:
         event_data.header.stamp = rospy.Time.now()
 
         try:
-            event_data.recognized_word = self.recognized_words_queue.get_nowait()
+            recognized_data = self.recognized_words_queue.get_nowait()
+            recognized_data = recognized_data.split('/')
+            recognized_word = recognized_data[0]
+            confidence = float(recognized_data[1])
+
+            event_data.recognized_word = recognized_word
+            event_data.confidence = confidence
             self.recognized_words_queue.task_done()
         except Queue.Empty, e:
             pass
